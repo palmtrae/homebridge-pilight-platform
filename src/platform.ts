@@ -13,7 +13,7 @@ import { PLATFORM_NAME, PLUGIN_NAME } from './settings'
 import {
   PilightWebSocketClient,
   PilightWebSocketConfig,
-} from './lib/PilightWebSocketClient'
+} from './lib/pilightWebSocketClient'
 import * as PilightAccessory from './lib/accessories'
 
 /**

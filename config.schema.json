@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "pilight",
   "pluginType": "platform",
   "singular": true,
   "schema": {
@@ -9,7 +9,47 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "Pilight Platform"
+      },
+      "instances": {
+        "title": "Pilight instances",
+        "type": "array",
+        "required": true,
+        "description": "The name of the plugin",
+        "items": {
+          "type": "object",
+          "title": "Pilight web socket configuration",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "description": "A nickname for the Pilight instance"
+            },
+            "host": {
+              "title": "Hostname",
+              "type": "string",
+              "default": "127.0.0.1",
+              "required": true,
+              "description": "The hostname or ip to Pilight web socket, default: 127.0.0.1",
+              "format": "hostname"
+            },
+            "port": {
+              "title": "Port",
+              "type": "number",
+              "required": true,
+              "default": 5001,
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "The port to Pilight web socket, default: 5001"
+            },
+            "interval": {
+              "title": "Message queue interval",
+              "type": "number",
+              "default": 400,
+              "description": "The time (in milliseconds) between messages sent to the websocket. This is to prevent message spamming to the websocket causing signals not coming through to the actual devices. Default: 400 (ms)"
+            }
+          }
+        }
       }
     }
   }

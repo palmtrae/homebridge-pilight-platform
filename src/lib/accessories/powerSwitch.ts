@@ -24,6 +24,10 @@ export class PowerSwitch extends PilightAccessory {
   ) {
     super(client)
 
+    // Generate a default service name
+    const defaultGroup = this.accessory.context.gui.group[0] || 'Default'
+    const defaultName = `${this.accessory.context.gui.name} (${defaultGroup})`
+
     // set accessory information
     this.accessory
       .getService(this.platform.Service.AccessoryInformation)!
@@ -41,7 +45,7 @@ export class PowerSwitch extends PilightAccessory {
       )
       .setCharacteristic(
         this.platform.Characteristic.ConfiguredName,
-        `[${this.accessory.context.gui.group[0]}] ${this.accessory.context.gui.name}`,
+        defaultName,
       )
 
     this.service =
@@ -54,7 +58,7 @@ export class PowerSwitch extends PilightAccessory {
     // set the service name, this is what is displayed as the default name on the Home app
     this.service.setCharacteristic(
       this.platform.Characteristic.Name,
-      accessory.context.gui.name,
+      defaultName,
     )
 
     // register handlers for the On/Off Characteristic

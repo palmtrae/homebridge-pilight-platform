@@ -42,11 +42,17 @@
               "maximum": 65535,
               "description": "The port to Pilight web socket, default: 5001"
             },
-            "interval": {
-              "title": "Message queue interval",
+            "messageInterval": {
+              "title": "Send message interval",
               "type": "number",
               "default": 400,
               "description": "The time (in milliseconds) between messages sent to the websocket. This is to prevent message spamming to the websocket causing signals not coming through to the actual devices. Default: 400 (ms)"
+            },
+            "retryInterval": {
+              "title": "Re-connect interval",
+              "type": "number",
+              "default": 10,
+              "description": "The time (in seconds) between retry attempts to connect to the web socket. Default: 10 (seconds)"
             }
           }
         }

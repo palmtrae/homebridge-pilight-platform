@@ -1,74 +1,42 @@
 import {
   Service,
-  PlatformAccessory,
   CharacteristicValue,
   CharacteristicSetCallback,
   CharacteristicGetCallback,
 } from 'homebridge'
 
 import { PilightAccessory, PilightDeviceUpdate } from './pilightAccessory'
-import { PilightWebSocketClient } from '../pilightWebSocketClient'
-import { PilightPlatform } from '../../platform'
 
 /**
  * Pilight Power Switch Accessory
  */
 export class PowerSwitch extends PilightAccessory {
-  private service: Service
-  private state: boolean
+  static readonly ON = 'on'
+  static readonly OFF = 'off'
 
-  constructor(
-    private readonly platform: PilightPlatform,
-    private readonly accessory: PlatformAccessory,
-    protected readonly client: PilightWebSocketClient,
-  ) {
-    super(client)
+  private service?: Service
+  private state?: boolean
 
-    // Generate a default service name
-    const defaultGroup = this.accessory.context.gui.group[0] || 'Default'
-    const defaultName = `${this.accessory.context.gui.name} (${defaultGroup})`
-
-    // set accessory information
-    this.accessory
-      .getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(
-        this.platform.Characteristic.Manufacturer,
-        'Pilight-Manufacturer',
-      )
-      .setCharacteristic(
-        this.platform.Characteristic.Model,
-        'Pilight-PowerSwitch',
-      )
-      .setCharacteristic(
-        this.platform.Characteristic.SerialNumber,
-        `${this.accessory.context.device.id[0].id}`,
-      )
-      .setCharacteristic(
-        this.platform.Characteristic.ConfiguredName,
-        defaultName,
-      )
-
-    this.service =
-      this.accessory.getService(this.platform.Service.Switch) ||
-      this.accessory.addService(this.platform.Service.Switch)
-
-    // Sets the initial state of the accessory
-    this.state = this.accessory.context.device.state === 'on'
-
-    // set the service name, this is what is displayed as the default name on the Home app
+  initServices(): Service[] {
+    const accessoryInformation = this.initAccessoryInformation()
+    this.state = this.accessory.context.device.state === PowerSwitch.ON
+    this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch)
     this.service.setCharacteristic(
       this.platform.Characteristic.Name,
-      defaultName,
+      this.getDefaultName(),
     )
-
+    this.service.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.state,
+    )
     // register handlers for the On/Off Characteristic
     this.service
       .getCharacteristic(this.platform.Characteristic.On)
       .on('set', this.setOn.bind(this)) // SET - bind to the `setOn` method below
       .on('get', this.getOn.bind(this)) // GET - bind to the `getOn` method below
-
-    // subscribe to update events coming from the pilight web socket
-    this.client.on('update', this.onUpdate.bind(this))
+    
+    this.log.info('initServices:', this.state)
+    return [accessoryInformation, this.service]
   }
 
   onUpdate(update: PilightDeviceUpdate) {
@@ -76,14 +44,14 @@ export class PowerSwitch extends PilightAccessory {
       return
     }
 
-    this.state = update.values.state === 'on'
-    this.service.updateCharacteristic(
+    this.state = update.values.state === PowerSwitch.ON
+    this.service!.updateCharacteristic(
       this.platform.Characteristic.On,
       this.state,
     )
-    this.platform.log.debug(
-      `[${this.accessory.displayName}] Setting isOn to ->`,
-      this.state,
+    this.log.debug(
+      `[${this.getDefaultName()}] Setting to ->`,
+      this.state ? PowerSwitch.ON : PowerSwitch.OFF,
     )
   }
 
@@ -91,18 +59,19 @@ export class PowerSwitch extends PilightAccessory {
    * Handle "SET" requests from HomeKit
    */
   setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-    this.platform.log.debug(
-      `[${this.accessory.displayName}] Setting isOn to ->`,
-      value,
+    const state = value ? PowerSwitch.ON : PowerSwitch.OFF
+    this.log.debug(
+      `[${this.getDefaultName()}] Setting to ->`,
+      state,
     )
     this.client.send({
       action: 'control',
       code: {
         device: this.accessory.context.id,
-        state: value ? 'on' : 'off',
+        state,
       },
     })
-    // you must call the callback function
+
     callback(null)
   }
 
@@ -110,8 +79,26 @@ export class PowerSwitch extends PilightAccessory {
    * Handle the "GET" requests from HomeKit
    */
   getOn(callback: CharacteristicGetCallback) {
-    const isOn = this.state
-    this.platform.log.debug(`[${this.accessory.displayName}] isOn ->`, isOn)
-    callback(null, isOn)
+    this.log.debug(`[${this.getDefaultName()}] state ->`, this.state ? PowerSwitch.ON : PowerSwitch.OFF)
+    callback(null, this.state)
   }
+
+  /**
+   * Handle "identify" via HomeKit UI.
+   */
+  async identify() {
+    const Characteristic = this.platform.Characteristic
+    if (this.state) {
+      this.service!.setCharacteristic(Characteristic.On, false)
+      setTimeout(() => {
+        this.service!.setCharacteristic(Characteristic.On, true)
+      }, 1000)
+    } else {
+      this.service!.setCharacteristic(Characteristic.On, true)
+      setTimeout(() => {
+        this.service!.setCharacteristic(Characteristic.On, false)
+      }, 1000)
+    }
+  }
+
 }

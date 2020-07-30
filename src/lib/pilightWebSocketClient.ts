@@ -7,7 +7,8 @@ export type PilightWebSocketConfig = {
   name?: string
   host: string
   port: number
-  interval: number
+  messageInterval: number
+  retryInterval: number
 }
 
 export class PilightWebSocketClient extends EventEmitter {
@@ -20,23 +21,44 @@ export class PilightWebSocketClient extends EventEmitter {
     public readonly api: API,
   ) {
     super()
-    this.ws = new WebSocket(`ws://${this.config.host}:${this.config.port}`)
+    this.ws = this.connect()
+    this.setMaxListeners(500)
+  }
+  
+  getName() {
+    return this.config.name || 'Default'
+  }
+
+  getSocketUrl() {
+    return `ws://${this.config.host}:${this.config.port}`
+  }
+
+  public connect(): WebSocket {
+    this.log.info(`WebSocket [${this.getName()}]: connecting to ${this.getSocketUrl()}...`)
+    this.ws = new WebSocket(this.getSocketUrl())
     this.ws.on('open', this.onOpen.bind(this))
     this.ws.on('close', this.onClose.bind(this))
     this.ws.on('message', this.onMessage.bind(this))
     this.ws.on('error', this.onError.bind(this))
-    this.setMaxListeners(500)
+    return this.ws
   }
 
   protected onOpen() {
     this.log.info(
-      `WebSocket connection to ${this.config.host}:${this.config.port} established successfully`,
+      `WebSocket [${this.getName()}]: connection to ${this.getSocketUrl()} established successfully`,
     )
     this.getConfig()
   }
 
   protected onClose(code: number, reason: string) {
-    this.log.info(`WebSocket closed with code ${code} and reason: ${reason}`)
+    this.log.info(`WebSocket [${this.getName()}]: closed with code ${code} and reason: ${reason}`)
+    this.messageQueue.reset()
+
+    // The close wasn't manually initiated
+    if (code !== 1) {
+      this.log.info(`WebSocket [${this.getName()}]: reconnecting in ${this.config.retryInterval} seconds`)
+      setTimeout(() => this.connect(), this.config.retryInterval)
+    }
   }
 
   protected onMessage(data: WebSocket.Data) {
@@ -95,16 +117,22 @@ export class PilightWebSocketClient extends EventEmitter {
     this.send({ action: 'request values' })
   }
 
+  public close() {
+    this.messageQueue.reset(() => {
+      this.ws.close(1)
+    })
+  }
+
   public send(payload: Record<string, unknown>) {
     this.messageQueue.push(async () => {
       try {
         const message = JSON.stringify(payload)
-        this.log.debug('Sending message', payload)
+        this.log.debug(`WebSocket [${this.getName()}]: Sending message`, payload)
         this.ws.send(message)
         await new Promise((resolve) =>
           setTimeout(() => {
             resolve()
-          }, this.config.interval),
+          }, this.config.messageInterval),
         )
       } catch (e) {
         this.log.error(e.toString())

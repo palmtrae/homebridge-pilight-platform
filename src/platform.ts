@@ -51,6 +51,16 @@ export class PilightPlatform implements DynamicPlatformPlugin {
   }
 
   /**
+   * Called when homebridge is shut down
+   */
+  public destroy() {
+    this.clients.forEach(client => {
+      this.log.info(`Closing ws://${client.config.host}:${client.config.port}`)
+      client.close()
+    })
+  }
+
+  /**
    * Establishes a connection to all configured pilight web sockets.
    */
   didFinishLaunching(): void {
@@ -81,7 +91,7 @@ export class PilightPlatform implements DynamicPlatformPlugin {
       }:${client.config.port}`,
     )
     this.log.debug('debug data', client, message)
-
+    
     Object.keys(message.config.devices).forEach((device) => {
       // Build a context object for the pilight device
       const context = {

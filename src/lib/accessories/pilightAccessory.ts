@@ -68,10 +68,7 @@ export abstract class PilightAccessory {
       .setCharacteristic(this.platform.Characteristic.Model, 'None')
       .setCharacteristic(this.platform.Characteristic.FirmwareRevision, 'None')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, `${this.accessory.context.id}`)
-      .setCharacteristic(
-        this.platform.Characteristic.ConfiguredName,
-        this.getDefaultName(),
-      )
+      .setCharacteristic(this.platform.Characteristic.Name, this.getDefaultName())
 
     return accessoryInformation!
   }

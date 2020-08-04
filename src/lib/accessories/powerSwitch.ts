@@ -18,7 +18,6 @@ export class PowerSwitch extends PilightAccessory {
   private state?: boolean
 
   initServices(): Service[] {
-    const accessoryInformation = this.initAccessoryInformation()
     this.state = this.accessory.context.device.state === PowerSwitch.ON
     this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch)
     this.service.setCharacteristic(
@@ -35,8 +34,7 @@ export class PowerSwitch extends PilightAccessory {
       .on('set', this.setOn.bind(this)) // SET - bind to the `setOn` method below
       .on('get', this.getOn.bind(this)) // GET - bind to the `getOn` method below
     
-    this.log.info('initServices:', this.state)
-    return [accessoryInformation, this.service]
+    return [this.accessoryInformation, this.service]
   }
 
   onUpdate(update: PilightDeviceUpdate) {
@@ -59,12 +57,17 @@ export class PowerSwitch extends PilightAccessory {
    * Handle "SET" requests from HomeKit
    */
   setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    if (!this.isConnected()) {
+      callback(new Error('WebSocket isn\'t connected'))
+      return
+    }
+
     const state = value ? PowerSwitch.ON : PowerSwitch.OFF
     this.log.debug(
       `[${this.getDefaultName()}] Setting to ->`,
       state,
     )
-    this.client.send({
+    this.client?.send({
       action: 'control',
       code: {
         device: this.accessory.context.id,

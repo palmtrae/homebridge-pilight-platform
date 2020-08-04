@@ -4,7 +4,7 @@ import { EventEmitter } from 'events'
 import { OperationQueue } from './operationQueue'
 
 export type PilightWebSocketConfig = {
-  name?: string
+  name: string
   host: string
   port: number
   messageInterval: number
@@ -14,6 +14,7 @@ export type PilightWebSocketConfig = {
 export class PilightWebSocketClient extends EventEmitter {
   protected ws: WebSocket
   protected messageQueue: OperationQueue = new OperationQueue()
+  isConnected = false
 
   public constructor(
     public readonly config: PilightWebSocketConfig,
@@ -24,6 +25,10 @@ export class PilightWebSocketClient extends EventEmitter {
     this.ws = this.connect()
     this.setMaxListeners(500)
   }
+
+  getId() {
+    return this.api.hap.uuid.generate(this.getSocketUrl())
+  }
   
   getName() {
     return this.config.name || 'Default'
@@ -31,6 +36,11 @@ export class PilightWebSocketClient extends EventEmitter {
 
   getSocketUrl() {
     return `ws://${this.config.host}:${this.config.port}`
+  }
+
+  getRetryInterval() {
+    const interval = this.config.retryInterval || 10
+    return interval * 1000
   }
 
   public connect(): WebSocket {
@@ -47,17 +57,21 @@ export class PilightWebSocketClient extends EventEmitter {
     this.log.info(
       `WebSocket [${this.getName()}]: connection to ${this.getSocketUrl()} established successfully`,
     )
+    this.isConnected = true
     this.getConfig()
+    this.emit('connected')
   }
 
   protected onClose(code: number, reason: string) {
     this.log.info(`WebSocket [${this.getName()}]: closed with code ${code} and reason: ${reason}`)
+    this.isConnected = false
     this.messageQueue.reset()
 
     // The close wasn't manually initiated
-    if (code !== 1) {
-      this.log.info(`WebSocket [${this.getName()}]: reconnecting in ${this.config.retryInterval} seconds`)
-      setTimeout(() => this.connect(), this.config.retryInterval)
+    if (code !== 1005) {
+      this.log.info(`WebSocket [${this.getName()}]: reconnecting in ${this.getRetryInterval() / 1000} seconds`)
+      setTimeout(() => this.connect(), this.getRetryInterval())
+      this.emit('disconnected')
     }
   }
 
@@ -119,7 +133,7 @@ export class PilightWebSocketClient extends EventEmitter {
 
   public close() {
     this.messageQueue.reset(() => {
-      this.ws.close(1)
+      this.ws.close(1000, 'Manual shutdown')
     })
   }
 

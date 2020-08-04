@@ -16,31 +16,41 @@ export type PilightDeviceUpdate = {
 }
 
 export abstract class PilightAccessory {
-  readonly client: PilightWebSocketClient
+  client?: PilightWebSocketClient
+
   readonly accessory: PlatformAccessory
   readonly platform: PilightPlatform
   readonly log: Logger
-  services: Service[];
-  reachable: boolean;
-
+  accessoryInformation: Service
+  services: Service[]
+  
   constructor(
     platform: PilightPlatform,
     accessory: PlatformAccessory,
-    client: PilightWebSocketClient,
+    client?: PilightWebSocketClient,
   ) {
     this.platform = platform
-    this.client = client
     this.accessory = accessory
     this.log = platform.log
+    this.setClient(client)
+    this.accessoryInformation = this.initAccessoryInformation()
     this.services = this.initServices()
-    this.reachable = true
     this.accessory.on(PlatformAccessoryEvent.IDENTIFY, () => this.identify())
-    
-    // subscribe to update events coming from the pilight web socket
-    this.client.on('update', this.onUpdate.bind(this))
+  }
+
+  isConnected():boolean {
+    return this.client?.isConnected || false
   }
   
+  setClient(client?: PilightWebSocketClient) {
+    this.client = client
+
+    // subscribe to update events coming from the pilight web socket
+    this.client?.on('update', this.onUpdate.bind(this))
+  }
+
   protected abstract onUpdate(update: PilightDeviceUpdate): void
+  protected abstract initServices(): Service[];
 
   identify(): void { 
     // Used to identify the device in question via HomeKit
@@ -56,8 +66,6 @@ export abstract class PilightAccessory {
     return defaultName
   }
 
-  protected abstract initServices(): Service[];
-
   protected initAccessoryInformation(): Service {
     const accessoryInformation = this.accessory.getService(
       this.platform.Service.AccessoryInformation,
@@ -72,5 +80,4 @@ export abstract class PilightAccessory {
 
     return accessoryInformation!
   }
-
 }

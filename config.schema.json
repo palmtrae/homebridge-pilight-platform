@@ -5,12 +5,6 @@
   "schema": {
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "required": true,
-        "default": "Pilight Platform"
-      },
       "instances": {
         "title": "Pilight instances",
         "type": "array",
@@ -23,7 +17,8 @@
             "name": {
               "title": "Name",
               "type": "string",
-              "description": "A nickname for the Pilight instance"
+              "description": "A nickname for the Pilight instance, used to distinguish different instances from each other.",
+              "required": true
             },
             "host": {
               "title": "Hostname",
@@ -45,12 +40,14 @@
             "messageInterval": {
               "title": "Send message interval",
               "type": "number",
+              "required": true,
               "default": 400,
               "description": "The time (in milliseconds) between messages sent to the websocket. This is to prevent message spamming to the websocket causing signals not coming through to the actual devices. Default: 400 (ms)"
             },
             "retryInterval": {
               "title": "Re-connect interval",
               "type": "number",
+              "required": true,
               "default": 10,
               "description": "The time (in seconds) between retry attempts to connect to the web socket. Default: 10 (seconds)"
             }

@@ -108,7 +108,6 @@ export class PilightPlatform implements DynamicPlatformPlugin {
         id,
         device: message.config.devices[id],
         gui: message.config.gui[id],
-        clientId: client.getId(),
       }
 
       const uuid = this.api.hap.uuid.generate(id)

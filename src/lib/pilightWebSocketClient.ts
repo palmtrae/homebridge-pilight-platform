@@ -25,10 +25,6 @@ export class PilightWebSocketClient extends EventEmitter {
     this.ws = this.connect()
     this.setMaxListeners(500)
   }
-
-  getId() {
-    return this.api.hap.uuid.generate(this.getSocketUrl())
-  }
   
   getName() {
     return this.config.name || 'Default'

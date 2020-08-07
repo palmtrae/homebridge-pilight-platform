@@ -18,16 +18,14 @@ export class PowerSwitch extends PilightAccessory {
   private state?: boolean
 
   initServices(): Service[] {
-    this.state = this.accessory.context.device.state === PowerSwitch.ON
+    this.log.debug('initServices in PowerSwitch')
     this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch)
     this.service.setCharacteristic(
       this.platform.Characteristic.Name,
       this.getDefaultName(),
     )
-    this.service.updateCharacteristic(
-      this.platform.Characteristic.On,
-      this.state,
-    )
+    this.setState(this.accessory.context.device.state === PowerSwitch.ON)
+
     // register handlers for the On/Off Characteristic
     this.service
       .getCharacteristic(this.platform.Characteristic.On)
@@ -37,20 +35,26 @@ export class PowerSwitch extends PilightAccessory {
     return [this.accessoryInformation, this.service]
   }
 
+  setInitialState() {
+    this.setState(this.accessory.context.device.state === PowerSwitch.ON)
+  }
+
+  setState(state: boolean) {
+    this.log.debug('Setting state', this.getDefaultName(), state ? PowerSwitch.ON : PowerSwitch.OFF)
+    this.accessory.context.device.state = state ? PowerSwitch.ON : PowerSwitch.OFF
+    this.state = state
+    this.service!.updateCharacteristic(
+      this.platform.Characteristic.On,
+      this.state,
+    )
+  }
+
   onUpdate(update: PilightDeviceUpdate) {
     if (!update.devices.includes(this.accessory.context.id)) {
       return
     }
 
-    this.state = update.values.state === PowerSwitch.ON
-    this.service!.updateCharacteristic(
-      this.platform.Characteristic.On,
-      this.state,
-    )
-    this.log.debug(
-      `[${this.getDefaultName()}] Setting to ->`,
-      this.state ? PowerSwitch.ON : PowerSwitch.OFF,
-    )
+    this.setState(update.values.state === PowerSwitch.ON)
   }
 
   /**

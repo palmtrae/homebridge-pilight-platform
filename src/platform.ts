@@ -139,7 +139,7 @@ export class PilightPlatform implements DynamicPlatformPlugin {
     const existing = this.mappedAccessories.get(uuid)
     if (existing !== undefined) {
       this.log.debug(`Ignoring device with uuid: ${uuid}, it's already created, updating web socket client`)
-      existing.client = existing.client || client
+      existing.setClient(existing.client || client)
       return existing
     }
 

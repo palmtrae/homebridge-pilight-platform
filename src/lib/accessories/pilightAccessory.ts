@@ -32,9 +32,9 @@ export abstract class PilightAccessory {
     this.platform = platform
     this.accessory = accessory
     this.log = platform.log
-    this.setClient(client)
     this.accessoryInformation = this.initAccessoryInformation()
     this.services = this.initServices()
+    this.setClient(client)
     this.accessory.on(PlatformAccessoryEvent.IDENTIFY, () => this.identify())
   }
 
@@ -43,14 +43,22 @@ export abstract class PilightAccessory {
   }
   
   setClient(client?: PilightWebSocketClient) {
-    this.client = client
+    if (this.client !== undefined) {
+      this.client!.off('update', this.onUpdate.bind(this))
+    }
 
-    // subscribe to update events coming from the pilight web socket
-    this.client?.on('update', this.onUpdate.bind(this))
+    this.client = client
+    
+    if (this.client !== undefined) {
+      this.client!.on('update', this.onUpdate.bind(this))
+    }
+
+    this.setInitialState()
   }
 
+  protected abstract setInitialState(): void
   protected abstract onUpdate(update: PilightDeviceUpdate): void
-  protected abstract initServices(): Service[];
+  protected abstract initServices(): Service[]
 
   identify(): void { 
     // Used to identify the device in question via HomeKit

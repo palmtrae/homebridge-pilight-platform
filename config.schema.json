@@ -41,8 +41,8 @@
               "title": "Send message interval",
               "type": "number",
               "required": true,
-              "default": 400,
-              "description": "The time (in milliseconds) between messages sent to the websocket. This is to prevent message spamming to the websocket causing signals not coming through to the actual devices. Default: 400 (ms)"
+              "default": 800,
+              "description": "The time (in milliseconds) between messages sent to the websocket. This is to prevent message spamming to the websocket causing signals not coming through to the actual devices. Default: 600 (ms)"
             },
             "retryInterval": {
               "title": "Re-connect interval",

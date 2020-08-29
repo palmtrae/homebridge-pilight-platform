@@ -19,7 +19,9 @@ export class PowerSwitch extends PilightAccessory {
 
   initServices(): Service[] {
     this.log.debug('initServices in PowerSwitch')
-    this.service = this.accessory.getService(this.platform.Service.Switch) || this.accessory.addService(this.platform.Service.Switch)
+    this.service =
+      this.accessory.getService(this.platform.Service.Switch) ||
+      this.accessory.addService(this.platform.Service.Switch)
     this.service.setCharacteristic(
       this.platform.Characteristic.Name,
       this.getDefaultName(),
@@ -31,7 +33,7 @@ export class PowerSwitch extends PilightAccessory {
       .getCharacteristic(this.platform.Characteristic.On)
       .on('set', this.setOn.bind(this)) // SET - bind to the `setOn` method below
       .on('get', this.getOn.bind(this)) // GET - bind to the `getOn` method below
-    
+
     return [this.accessoryInformation, this.service]
   }
 
@@ -40,8 +42,14 @@ export class PowerSwitch extends PilightAccessory {
   }
 
   setState(state: boolean) {
-    this.log.debug('Setting state', this.getDefaultName(), state ? PowerSwitch.ON : PowerSwitch.OFF)
-    this.accessory.context.device.state = state ? PowerSwitch.ON : PowerSwitch.OFF
+    this.log.debug(
+      'Setting state',
+      this.getDefaultName(),
+      state ? PowerSwitch.ON : PowerSwitch.OFF,
+    )
+    this.accessory.context.device.state = state
+      ? PowerSwitch.ON
+      : PowerSwitch.OFF
     this.state = state
     this.service!.updateCharacteristic(
       this.platform.Characteristic.On,
@@ -53,7 +61,7 @@ export class PowerSwitch extends PilightAccessory {
     if (!update.devices.includes(this.accessory.context.id)) {
       return
     }
-
+    this.log.debug(`[${this.getDefaultName()}] Acting upon update`)
     this.setState(update.values.state === PowerSwitch.ON)
   }
 
@@ -61,32 +69,40 @@ export class PowerSwitch extends PilightAccessory {
    * Handle "SET" requests from HomeKit
    */
   setOn(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-    if (!this.isConnected()) {
-      callback(new Error('WebSocket isn\'t connected'))
+    if (!this.isConnected() || this.client === undefined) {
+      callback(new Error('WebSocket not connected'))
       return
     }
 
     const state = value ? PowerSwitch.ON : PowerSwitch.OFF
-    this.log.debug(
-      `[${this.getDefaultName()}] Setting to ->`,
-      state,
-    )
-    this.client?.send({
-      action: 'control',
-      code: {
-        device: this.accessory.context.id,
-        state,
-      },
-    })
+    this.log.debug(`[${this.getDefaultName()}] Setting to ->`, state)
 
-    callback(null)
+    this.client?.send(
+      {
+        action: 'control',
+        code: {
+          device: this.accessory.context.id,
+          state,
+        },
+      },
+      (success) => {
+        if (success) {
+          callback(null)
+        } else {
+          callback(new Error('WebSocket error'))
+        }
+      },
+    )
   }
 
   /**
    * Handle the "GET" requests from HomeKit
    */
   getOn(callback: CharacteristicGetCallback) {
-    this.log.debug(`[${this.getDefaultName()}] state ->`, this.state ? PowerSwitch.ON : PowerSwitch.OFF)
+    this.log.debug(
+      `[${this.getDefaultName()}] state ->`,
+      this.state ? PowerSwitch.ON : PowerSwitch.OFF,
+    )
     callback(null, this.state)
   }
 
@@ -107,5 +123,4 @@ export class PowerSwitch extends PilightAccessory {
       }, 1000)
     }
   }
-
 }

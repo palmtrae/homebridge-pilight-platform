@@ -36,10 +36,10 @@ export class PilightPlatform implements DynamicPlatformPlugin {
   private clients: PilightWebSocketClient[] = []
 
   // Loaded and configured accessories
-  private readonly mappedAccessories: Map<string, PilightAccessory.PilightAccessory> = new Map<
-  string,
-  PilightAccessory.PilightAccessory
->()
+  private readonly mappedAccessories: Map<
+    string,
+    PilightAccessory.PilightAccessory
+  > = new Map<string, PilightAccessory.PilightAccessory>()
 
   constructor(
     public readonly log: Logger,
@@ -55,7 +55,10 @@ export class PilightPlatform implements DynamicPlatformPlugin {
       this.log.error('No pilight web socket connections configured')
     }
 
-    this.api.on(APIEvent.DID_FINISH_LAUNCHING, this.didFinishLaunching.bind(this))
+    this.api.on(
+      APIEvent.DID_FINISH_LAUNCHING,
+      this.didFinishLaunching.bind(this),
+    )
     this.api.on(APIEvent.SHUTDOWN, this.shutdown.bind(this))
   }
 
@@ -76,7 +79,7 @@ export class PilightPlatform implements DynamicPlatformPlugin {
    * Called when homebridge is shut down
    */
   public shutdown() {
-    this.clients.forEach(client => {
+    this.clients.forEach((client) => {
       this.log.info(`Closing ws://${client.config.host}:${client.config.port}`)
       client.close()
     })
@@ -111,9 +114,13 @@ export class PilightPlatform implements DynamicPlatformPlugin {
       }
 
       const uuid = this.api.hap.uuid.generate(id)
-      const existingAccessory = this.accessories.find((accessory) => accessory.UUID === uuid)
-      
-      const accessory = existingAccessory || new this.api.platformAccessory(context.gui.name, uuid) 
+      const existingAccessory = this.accessories.find(
+        (accessory) => accessory.UUID === uuid,
+      )
+
+      const accessory =
+        existingAccessory ||
+        new this.api.platformAccessory(context.gui.name, uuid)
       accessory.context = context
 
       if (existingAccessory) {
@@ -125,26 +132,37 @@ export class PilightPlatform implements DynamicPlatformPlugin {
       } else {
         this.accessories.push(accessory)
         this.log.info('Adding new accessory', context.gui.name)
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory])
+        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+          accessory,
+        ])
       }
 
       this.createAccessory(accessory, client)
     })
   }
 
-  createAccessory(accessory: PlatformAccessory, client?: PilightWebSocketClient): PilightAccessory.PilightAccessory {
+  createAccessory(
+    accessory: PlatformAccessory,
+    client?: PilightWebSocketClient,
+  ): PilightAccessory.PilightAccessory {
     const uuid = this.api.hap.uuid.generate(accessory.context.id)
 
     // Don't create another PilightAccessory if it's already created.
     const existing = this.mappedAccessories.get(uuid)
     if (existing !== undefined) {
-      this.log.debug(`Ignoring device with uuid: ${uuid}, it's already created, updating web socket client`)
+      this.log.debug(
+        `Ignoring device with uuid: ${uuid}, it's already created, updating web socket client`,
+      )
       existing.setClient(existing.client || client)
       return existing
     }
 
     // TODO: add support for other types of devices, not only PowerSwitch.
-    const pilightAccessory = new PilightAccessory.PowerSwitch(this, accessory, client)
+    const pilightAccessory = new PilightAccessory.PowerSwitch(
+      this,
+      accessory,
+      client,
+    )
     this.mappedAccessories.set(uuid, pilightAccessory)
     return pilightAccessory
   }

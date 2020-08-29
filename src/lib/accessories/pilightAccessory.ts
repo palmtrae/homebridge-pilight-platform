@@ -23,7 +23,7 @@ export abstract class PilightAccessory {
   readonly log: Logger
   accessoryInformation: Service
   services: Service[]
-  
+
   constructor(
     platform: PilightPlatform,
     accessory: PlatformAccessory,
@@ -38,19 +38,27 @@ export abstract class PilightAccessory {
     this.accessory.on(PlatformAccessoryEvent.IDENTIFY, () => this.identify())
   }
 
-  isConnected():boolean {
+  isConnected(): boolean {
     return this.client?.isConnected || false
   }
-  
+
   setClient(client?: PilightWebSocketClient) {
     if (this.client !== undefined) {
+      this.log.debug(
+        'A websocket client is already set on this accessory. Unsubscribing to updates.',
+      )
       this.client!.off('update', this.onUpdate.bind(this))
     }
 
     this.client = client
-    
+
     if (this.client !== undefined) {
+      this.log.debug('Setting a new websocket client, subscribing to updates.')
       this.client!.on('update', this.onUpdate.bind(this))
+    } else {
+      this.log.debug(
+        'Starting accessory without any websocket client initially',
+      )
     }
 
     this.setInitialState()
@@ -60,10 +68,10 @@ export abstract class PilightAccessory {
   protected abstract onUpdate(update: PilightDeviceUpdate): void
   protected abstract initServices(): Service[]
 
-  identify(): void { 
+  identify(): void {
     // Used to identify the device in question via HomeKit
   }
-  
+
   getServices(): Service[] {
     return this.services
   }
@@ -78,13 +86,19 @@ export abstract class PilightAccessory {
     const accessoryInformation = this.accessory.getService(
       this.platform.Service.AccessoryInformation,
     )
-    
+
     accessoryInformation!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Pilight')
       .setCharacteristic(this.platform.Characteristic.Model, 'None')
       .setCharacteristic(this.platform.Characteristic.FirmwareRevision, 'None')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, `${this.accessory.context.id}`)
-      .setCharacteristic(this.platform.Characteristic.Name, this.getDefaultName())
+      .setCharacteristic(
+        this.platform.Characteristic.SerialNumber,
+        `${this.accessory.context.id}`,
+      )
+      .setCharacteristic(
+        this.platform.Characteristic.Name,
+        this.getDefaultName(),
+      )
 
     return accessoryInformation!
   }

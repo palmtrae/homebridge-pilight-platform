@@ -25,7 +25,7 @@ export class PilightWebSocketClient extends EventEmitter {
     this.ws = this.connect()
     this.setMaxListeners(500)
   }
-  
+
   getName() {
     return this.config.name || 'Default'
   }
@@ -40,7 +40,9 @@ export class PilightWebSocketClient extends EventEmitter {
   }
 
   public connect(): WebSocket {
-    this.log.info(`WebSocket [${this.getName()}]: connecting to ${this.getSocketUrl()}...`)
+    this.log.info(
+      `WebSocket [${this.getName()}]: connecting to ${this.getSocketUrl()}...`,
+    )
     this.ws = new WebSocket(this.getSocketUrl())
     this.ws.on('open', this.onOpen.bind(this))
     this.ws.on('close', this.onClose.bind(this))
@@ -59,13 +61,19 @@ export class PilightWebSocketClient extends EventEmitter {
   }
 
   protected onClose(code: number, reason: string) {
-    this.log.info(`WebSocket [${this.getName()}]: closed with code ${code} and reason: ${reason}`)
+    this.log.info(
+      `WebSocket [${this.getName()}]: closed with code ${code} and reason: ${reason}`,
+    )
     this.isConnected = false
     this.messageQueue.reset()
 
     // The close wasn't manually initiated
     if (code !== 1005) {
-      this.log.info(`WebSocket [${this.getName()}]: reconnecting in ${this.getRetryInterval() / 1000} seconds`)
+      this.log.info(
+        `WebSocket [${this.getName()}]: reconnecting in ${
+          this.getRetryInterval() / 1000
+        } seconds`,
+      )
       setTimeout(() => this.connect(), this.getRetryInterval())
       this.emit('disconnected')
     }
@@ -133,19 +141,38 @@ export class PilightWebSocketClient extends EventEmitter {
     })
   }
 
-  public send(payload: Record<string, unknown>) {
+  public send(
+    payload: Record<string, unknown>,
+    callback?: (success: boolean) => void,
+  ) {
     this.messageQueue.push(async () => {
       try {
         const message = JSON.stringify(payload)
-        this.log.debug(`WebSocket [${this.getName()}]: Sending message`, payload)
-        this.ws.send(message)
+        this.log.debug(
+          `WebSocket [${this.getName()}]: Sending message`,
+          payload,
+        )
+        let failed = false
+        this.ws.send(message, (error) => {
+          if (error) {
+            this.log.error(error.toString())
+            failed = true
+            callback && callback(false)
+          } else {
+            this.log.debug(
+              `WebSocket [${this.getName()}]: Message sent successfully`,
+            )
+          }
+        })
         await new Promise((resolve) =>
           setTimeout(() => {
             resolve()
           }, this.config.messageInterval),
         )
+        callback && !failed && callback(true)
       } catch (e) {
         this.log.error(e.toString())
+        callback && callback(false)
       }
     })
   }

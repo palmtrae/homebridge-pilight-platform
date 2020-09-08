@@ -75,7 +75,14 @@ export class PowerSwitch extends PilightAccessory {
     }
 
     const state = value ? PowerSwitch.ON : PowerSwitch.OFF
-    this.log.debug(`[${this.getDefaultName()}] Setting to ->`, state)
+    const changed = this.state !== value
+
+    if (changed) {
+      this.log.debug(`[${this.getDefaultName()}] Changing state to ->`, state)
+    } else {
+      this.log.debug(`[${this.getDefaultName()}] Is already at state ->`, state)
+      callback(null)
+    }
 
     this.client?.send(
       {
@@ -86,6 +93,10 @@ export class PowerSwitch extends PilightAccessory {
         },
       },
       (success) => {
+        if (!changed) {
+          return
+        }
+
         if (success) {
           callback(null)
         } else {

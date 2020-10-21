@@ -13,9 +13,13 @@ import { PilightAccessory, PilightDeviceUpdate } from './pilightAccessory'
 export class PowerSwitch extends PilightAccessory {
   static readonly ON = 'on'
   static readonly OFF = 'off'
+  static readonly RETRIES = 9
+  static readonly RETRY_TIMEOUT = 1000
 
   private service?: Service
   private state?: boolean
+  private retryTimer?: NodeJS.Timeout
+  private retryAttempt = 0
 
   initServices(): Service[] {
     this.log.debug('initServices in PowerSwitch')
@@ -61,8 +65,10 @@ export class PowerSwitch extends PilightAccessory {
     if (!update.devices.includes(this.accessory.context.id)) {
       return
     }
+    
     this.log.debug(`[${this.getDefaultName()}] Acting upon update`)
     this.setState(update.values.state === PowerSwitch.ON)
+    this.clearRetryTimer()
   }
 
   /**
@@ -79,6 +85,7 @@ export class PowerSwitch extends PilightAccessory {
 
     if (changed) {
       this.log.debug(`[${this.getDefaultName()}] Changing state to ->`, state)
+      this.startRetryTimer(value)
     } else {
       this.log.debug(`[${this.getDefaultName()}] Is already at state ->`, state)
       callback(null)
@@ -104,6 +111,29 @@ export class PowerSwitch extends PilightAccessory {
         }
       },
     )
+  }
+
+  private startRetryTimer(value: CharacteristicValue) {
+    this.log.debug(`[${this.getDefaultName()}] Starting retry timer.`)
+    this.retryTimer = setTimeout(() => {
+      this.retryAttempt += 1
+      if (this.retryAttempt > PowerSwitch.RETRIES) {
+        this.clearRetryTimer()
+        return
+      }
+      this.setOn(value, () => {
+        this.log.debug(`Retry attempt ${this.retryAttempt} of ${PowerSwitch.RETRIES} sent`)
+      })
+    }, PowerSwitch.RETRY_TIMEOUT)
+  }
+
+  private clearRetryTimer() {
+    this.log.debug(`[${this.getDefaultName()}] Clearing retry timer.`)
+    this.retryAttempt = 0
+    if (this.retryTimer !== undefined) {
+      clearTimeout(this.retryTimer)
+    }
+    this.retryTimer = undefined
   }
 
   /**

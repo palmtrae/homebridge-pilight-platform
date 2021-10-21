@@ -80,7 +80,12 @@ export class PilightWebSocketClient extends EventEmitter {
   }
 
   protected onMessage(data: WebSocket.Data) {
-    if (typeof data === 'string') {
+    if (typeof data === 'string' || typeof data === 'object') {
+      // Handle the Buffer-object that pilight sometimes sends when the
+      // payload is too large
+      if (typeof data === 'object') {
+        data = data.toString('utf8')
+      }
       const message = JSON.parse(data as string)
       if (!message) {
         return
@@ -97,23 +102,29 @@ export class PilightWebSocketClient extends EventEmitter {
         this.emit('update', message)
       }
     } else {
-      this.log.error('Message received with unhandled data type', data)
+      this.log.error('Message received with unhandled data type', typeof data)
     }
   }
 
-  protected static isMessageConfigKind(message: any): boolean {
+  protected static isMessageConfigKind(
+    message: Record<string, unknown>,
+  ): boolean {
     return (
       typeof message.message !== 'undefined' && message.message === 'config'
     )
   }
 
-  protected static isMessageValuesKind(message: any): boolean {
+  protected static isMessageValuesKind(
+    message: Record<string, unknown>,
+  ): boolean {
     return (
       typeof message.message !== 'undefined' && message.message === 'values'
     )
   }
 
-  protected static isMessageUpdateKind(message: any): boolean {
+  protected static isMessageUpdateKind(
+    message: Record<string, unknown>,
+  ): boolean {
     return (
       typeof message.origin !== 'undefined' &&
       message.origin === 'update' &&
@@ -145,6 +156,7 @@ export class PilightWebSocketClient extends EventEmitter {
     payload: Record<string, unknown>,
     callback?: (success: boolean) => void,
   ) {
+    this.log.debug(`WebSocket [${this.getName()}]: Preparing message`)
     this.messageQueue.push(async () => {
       try {
         const message = JSON.stringify(payload)
@@ -164,13 +176,13 @@ export class PilightWebSocketClient extends EventEmitter {
             )
           }
         })
-        await new Promise((resolve) =>
+        await new Promise<void>((resolve) =>
           setTimeout(() => {
             resolve()
           }, this.config.messageInterval),
         )
         callback && !failed && callback(true)
-      } catch (e) {
+      } catch (e: any) {
         this.log.error(e.toString())
         callback && callback(false)
       }

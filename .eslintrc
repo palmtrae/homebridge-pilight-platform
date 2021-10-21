@@ -13,8 +13,7 @@
   "rules": {
     "quotes": ["warn", "single"],
     "indent": ["warn", 2, { "SwitchCase": 1 }],
-    "linebreak-style": ["warn", "unix"],
-    "semi": ["warn", "never"],
+    "semi": ["off"],
     "comma-dangle": ["warn", "always-multiline"],
     "dot-notation": "off",
     "eqeqeq": "warn",
@@ -26,6 +25,7 @@
     "no-non-null-assertion": ["off"],
     "comma-spacing": ["error"],
     "no-multi-spaces": ["warn", { "ignoreEOLComments": true }],
+    "no-trailing-spaces": ["warn"],
     "lines-between-class-members": [
       "warn",
       "always",
@@ -33,6 +33,8 @@
     ],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off"
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/semi": ["warn", "never"],
+    "@typescript-eslint/member-delimiter-style": ["off"]
   }
 }

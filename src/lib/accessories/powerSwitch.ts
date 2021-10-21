@@ -65,7 +65,7 @@ export class PowerSwitch extends PilightAccessory {
     if (!update.devices.includes(this.accessory.context.id)) {
       return
     }
-    
+
     this.log.debug(`[${this.getDefaultName()}] Acting upon update`)
     this.setState(update.values.state === PowerSwitch.ON)
     this.clearRetryTimer()
@@ -79,6 +79,8 @@ export class PowerSwitch extends PilightAccessory {
       callback(new Error('WebSocket not connected'))
       return
     }
+
+    this.log.debug(`[${this.getDefaultName()}]: Wants state change`)
 
     const state = value ? PowerSwitch.ON : PowerSwitch.OFF
     const changed = this.state !== value
@@ -122,7 +124,9 @@ export class PowerSwitch extends PilightAccessory {
         return
       }
       this.setOn(value, () => {
-        this.log.debug(`Retry attempt ${this.retryAttempt} of ${PowerSwitch.RETRIES} sent`)
+        this.log.debug(
+          `Retry attempt ${this.retryAttempt} of ${PowerSwitch.RETRIES} sent`,
+        )
       })
     }, PowerSwitch.RETRY_TIMEOUT)
   }

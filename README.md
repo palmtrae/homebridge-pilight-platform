@@ -7,7 +7,26 @@
 
 # Homebridge Pilight Platform Plugin
 
-TODO
+This plugin is very much in an alpha-state. It currently only supports the device-types `Switch` and `Dimmer`, other types will be ignored. Configure using the configuration UI in Homebridge, or add a platform in your `config.json` file:
+
+```json
+{
+  "platforms": [
+      {
+          "platform": "pilight",
+          "instances": [
+              {
+                  "name": "Pilight instance",
+                  "host": "127.0.0.1",
+                  "port": 5001,
+                  "messageInterval": 800,
+                  "retryInterval": 10
+              }
+          ]
+      }
+    ]
+}
+```
 
 ## Setup Development Environment
 
@@ -101,5 +120,5 @@ npm publish --tag=beta
 Users can then install the  *beta* version by appending `@beta` to the install command, for example:
 
 ```
-sudo npm install -g homebridge-example-plugin@beta
+sudo npm install -g homebridge-pilight-platform@beta
 ```

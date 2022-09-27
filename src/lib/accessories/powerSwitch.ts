@@ -11,6 +11,36 @@ import { PilightAccessory, PilightDeviceUpdate } from './pilightAccessory'
  * Pilight Power Switch Accessory
  */
 export class PowerSwitch extends PilightAccessory {
+  static SUPPORTED_PROTOCOLS = [
+    'kaku_switch',
+    'nexa_switch',
+    'beamish_switch',
+    'kaku_switch_old',
+    'clarus_switch',
+    'elro_300_switch',
+    'elro_400_switch',
+    'elro_800_switch',
+    'coco_switch',
+    'dio_switch',
+    'intertechno_old',
+    'intertechno_switch',
+    'smartwares_switch',
+    'brennenstuhl',
+    'cogex',
+    'duwi',
+    'rsl366',
+    'techlico_switch',
+    'cleverwatts',
+    'quigg',
+    'gt1000',
+    'quigg_gt7000',
+    'impuls',
+    'promax',
+    'selectremote',
+    'silvercrest',
+    'x10',
+  ]
+
   static readonly ON = 'on'
   static readonly OFF = 'off'
   static readonly RETRIES = 9
@@ -167,5 +197,12 @@ export class PowerSwitch extends PilightAccessory {
         this.service!.setCharacteristic(Characteristic.On, false)
       }, 1000)
     }
+  }
+
+  /**
+   * Determines if the device protocol is supported
+   */
+  public static isSupportedProtocol(protocol: string): boolean {
+    return PowerSwitch.SUPPORTED_PROTOCOLS.includes(protocol)
   }
 }

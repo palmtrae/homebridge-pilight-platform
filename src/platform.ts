@@ -15,6 +15,7 @@ import {
   PilightWebSocketConfig,
 } from './lib/pilightWebSocketClient'
 import * as PilightAccessory from './lib/accessories'
+import { isProtocolSupported } from './lib/utils'
 
 export interface PilightConfig extends PlatformConfig {
   name: string
@@ -113,38 +114,43 @@ export class PilightPlatform implements DynamicPlatformPlugin {
         gui: message.config.gui[id],
       }
 
-      const uuid = this.api.hap.uuid.generate(id)
-      const existingAccessory = this.accessories.find(
-        (accessory) => accessory.UUID === uuid,
-      )
-
-      const accessory =
-        existingAccessory ||
-        new this.api.platformAccessory(context.gui.name, uuid)
-      accessory.context = context
-
-      if (existingAccessory) {
-        this.log.info(
-          'Restoring existing accessory from cache:',
-          existingAccessory.displayName,
+      const deviceProtocol = context.device.protocol.length > 0 ? context.device.protocol[0] : ''
+      if (isProtocolSupported(deviceProtocol)) {
+        const uuid = this.api.hap.uuid.generate(id)
+        const existingAccessory = this.accessories.find(
+          (accessory) => accessory.UUID === uuid,
         )
-        this.api.updatePlatformAccessories([accessory])
-      } else {
-        this.accessories.push(accessory)
-        this.log.info('Adding new accessory', context.gui.name)
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
-          accessory,
-        ])
-      }
 
-      this.createAccessory(accessory, client)
+        const accessory =
+          existingAccessory ||
+          new this.api.platformAccessory(context.gui.name, uuid)
+        accessory.context = context
+
+        if (existingAccessory) {
+          this.log.info(
+            'Restoring existing accessory from cache:',
+            existingAccessory.displayName,
+          )
+          this.api.updatePlatformAccessories([accessory])
+        } else {
+          this.accessories.push(accessory)
+          this.log.info('Adding new accessory', context.gui.name)
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+            accessory,
+          ])
+        }
+
+        this.createAccessory(accessory, client)
+      } else {
+        this.log.info('Unsupported accessory protocol, ignoring', context.device.protocol)
+      }
     })
   }
 
   createAccessory(
     accessory: PlatformAccessory,
     client?: PilightWebSocketClient,
-  ): PilightAccessory.PilightAccessory {
+  ) {
     const uuid = this.api.hap.uuid.generate(accessory.context.id)
 
     // Don't create another PilightAccessory if it's already created.
@@ -157,13 +163,26 @@ export class PilightPlatform implements DynamicPlatformPlugin {
       return existing
     }
 
-    // TODO: add support for other types of devices, not only PowerSwitch.
-    const pilightAccessory = new PilightAccessory.PowerSwitch(
-      this,
-      accessory,
-      client,
-    )
-    this.mappedAccessories.set(uuid, pilightAccessory)
-    return pilightAccessory
+    if (accessory.context.device.protocol.length > 0) {
+      const deviceProtocol = accessory.context.device.protocol[0]
+      let pilightAccessory: PilightAccessory.PilightAccessory | null = null
+
+      if (PilightAccessory.PowerSwitch.isSupportedProtocol(deviceProtocol)) {
+        pilightAccessory = new PilightAccessory.PowerSwitch(
+          this,
+          accessory,
+          client,
+        )
+      } else if (PilightAccessory.Dimmer.isSupportedProtocol(deviceProtocol)) {
+        pilightAccessory = new PilightAccessory.Dimmer(
+          this,
+          accessory,
+          client,
+        )
+      }
+      if (pilightAccessory !== null) {
+        this.mappedAccessories.set(uuid, pilightAccessory!)
+      }
+    }
   }
 }

@@ -12,6 +12,7 @@ export type PilightDeviceUpdate = {
   values: {
     timestamp: number
     state: string
+    dimlevel: string
   }
 }
 
@@ -101,5 +102,9 @@ export abstract class PilightAccessory {
       )
 
     return accessoryInformation!
+  }
+
+  public static isSupportedProtocol(protocol: string): boolean {
+    return false
   }
 }

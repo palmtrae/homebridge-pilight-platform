@@ -60,7 +60,7 @@ export class PowerSwitch extends PilightAccessory {
       this.platform.Characteristic.Name,
       this.getDefaultName(),
     )
-    this.setState(this.accessory.context.device.state === PowerSwitch.ON)
+    this.updateState(this.accessory.context.device.state === PowerSwitch.ON)
 
     // register handlers for the On/Off Characteristic
     this.service
@@ -72,18 +72,14 @@ export class PowerSwitch extends PilightAccessory {
   }
 
   setInitialState() {
-    this.setState(this.accessory.context.device.state === PowerSwitch.ON)
+    this.updateState(this.accessory.context.device.state === PowerSwitch.ON)
   }
 
-  setState(state: boolean) {
-    this.log.debug(
-      'Setting state',
-      this.getDefaultName(),
-      state ? PowerSwitch.ON : PowerSwitch.OFF,
-    )
-    this.accessory.context.device.state = state
-      ? PowerSwitch.ON
-      : PowerSwitch.OFF
+  updateState(state: boolean) {
+    const stringState = state ? PowerSwitch.ON : PowerSwitch.OFF
+
+    this.log.debug(`[${this.getDefaultName()}] setting state ${stringState}`)
+    this.accessory.context.device.state = stringState
     this.state = state
     this.service!.updateCharacteristic(
       this.platform.Characteristic.On,
@@ -97,7 +93,7 @@ export class PowerSwitch extends PilightAccessory {
     }
 
     this.log.debug(`[${this.getDefaultName()}] Acting upon update`)
-    this.setState(update.values.state === PowerSwitch.ON)
+    this.updateState(update.values.state === PowerSwitch.ON)
     this.clearRetryTimer()
   }
 

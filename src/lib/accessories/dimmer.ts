@@ -36,7 +36,8 @@ export class Dimmer extends PilightAccessory {
       this.getDefaultName(),
     )
 
-    this.setState(this.accessory.context.device.state === Dimmer.ON)
+    this.updateState(this.accessory.context.device.state === Dimmer.ON)
+    this.updateDimLevel(this.accessory.context.device.dimlevel || 0)
 
     // register handlers for the On/Off Characteristic
     this.service
@@ -54,22 +55,32 @@ export class Dimmer extends PilightAccessory {
   }
 
   setInitialState() {
-    this.setState(this.accessory.context.device.state === Dimmer.ON)
+    this.updateState(this.accessory.context.device.state === Dimmer.ON)
+    this.updateDimLevel(this.accessory.context.device.dimlevel || 0)
   }
 
-  setState(state: boolean) {
-    this.log.debug(
-      'Setting state',
-      this.getDefaultName(),
-      state ? Dimmer.ON : Dimmer.OFF,
-    )
-    this.accessory.context.device.state = state
-      ? Dimmer.ON
-      : Dimmer.OFF
+  updateState(state: boolean) {
+    const stringState = state ? Dimmer.ON : Dimmer.OFF
+
+    this.log.debug(`[${this.getDefaultName()}] setting state ${stringState}`)
+    this.accessory.context.device.state = stringState
     this.state = state
     this.service!.updateCharacteristic(
       this.platform.Characteristic.On,
       this.state,
+    )
+  }
+
+  updateDimLevel(value: number) {
+    const brightness = this.dimLevelToBrightness(value)
+    this.log.debug(`[${this.getDefaultName()}] setting brightness ${brightness} from dim level ${value}`)
+
+    this.accessory.context.device.dimlevel = value
+    this.dimLevel = value
+
+    this.service!.updateCharacteristic(
+      this.platform.Characteristic.Brightness,
+      brightness,
     )
   }
 
@@ -79,7 +90,8 @@ export class Dimmer extends PilightAccessory {
     }
 
     this.log.debug(`[${this.getDefaultName()}] Acting upon update`)
-    this.setState(update.values.state === Dimmer.ON)
+    this.updateState(update.values.state === Dimmer.ON)
+    this.updateDimLevel(update.values.dimlevel || this.dimLevel || 0)
     this.clearRetryTimer()
   }
 

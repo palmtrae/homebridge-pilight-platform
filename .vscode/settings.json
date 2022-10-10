@@ -5,5 +5,9 @@
   },
   "editor.rulers": [140],
   "eslint.enable": true,
-  "cSpell.words": ["eqeqeq"]
+  "cSpell.words": [
+    "dimlevel",
+    "eqeqeq",
+    "kaku"
+  ]
 }

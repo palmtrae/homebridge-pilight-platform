@@ -12,7 +12,7 @@ export type PilightDeviceUpdate = {
   values: {
     timestamp: number
     state: string
-    dimlevel: string
+    dimlevel: number
   }
 }
 

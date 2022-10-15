@@ -104,6 +104,7 @@ export abstract class PilightAccessory {
     return accessoryInformation!
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public static isSupportedProtocol(protocol: string): boolean {
     return false
   }
